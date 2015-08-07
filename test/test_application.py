@@ -35,11 +35,7 @@ class TestApplication(unittest.TestCase):
 
         self.assertEqual(main(), -1)
 
-test_suite = unittest.TestSuite((TestApplication('test_import'),
-                                 TestApplication('test_application_subclassing'),
-                                 TestApplication('test_application_second_subclassing'),
-                                 TestApplication('test_main_default'),
-                                 TestApplication('test_main_custom')))
+test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestApplication)
 
 if __name__ == '__main__':
     unittest.main()

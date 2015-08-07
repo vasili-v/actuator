@@ -1,0 +1,14 @@
+language: python
+
+python:
+    - 2.7
+
+before_install:
+    - "pip install coverage"
+    - "pip install scrutinizer-ocular"
+
+install: "pip install ."
+
+script: "nosetests --with-coverage --cover-erase --cover-package=actuator"
+
+after_script: "ocular"
