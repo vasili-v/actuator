@@ -1,17 +1,4 @@
-from actuator.exceptions import ApplicationRedefined
-
-class _Registry(object):
-    def __init__(self):
-        self.application = None
-
-    def register(self, entity):
-        if self.application is not None and \
-           self.application is not Application:
-            raise ApplicationRedefined(other=entity, current=self.application)
-
-        self.application = entity
-
-_registry = _Registry()
+from actuator._registry import _registry
 
 class _ApplicationMetaclass(type):
     def __init__(cls, name, bases, attributes):
