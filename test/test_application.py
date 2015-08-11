@@ -1,5 +1,6 @@
 import unittest
 
+from actuator.exceptions import ApplicationRedefined
 from actuator.application import _registry, Application, main
 
 class TestApplication(unittest.TestCase):
@@ -21,9 +22,12 @@ class TestApplication(unittest.TestCase):
 
         self.assertEqual(_registry.application, TestApplication)
 
-        with self.assertRaises(Exception) as ctx:
+        with self.assertRaises(ApplicationRedefined) as ctx:
             class SecondTestApplication(Application):
                 pass
+
+        self.assertIn('TestApplication', str(ctx.exception))
+        self.assertIn('SecondTestApplication', str(ctx.exception))
 
     def test_main_default(self):
         self.assertEqual(main(), 0)

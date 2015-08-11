@@ -1,12 +1,13 @@
+from actuator.exceptions import ApplicationRedefined
+
 class _Registry(object):
     def __init__(self):
         self.application = None
 
     def register(self, entity):
-        if self.application is not None and self.application is not Application:
-            raise Exception('Can\'t define %s as application class because ' \
-                            '%s has already been defined' % \
-                            (entity.__name__, self.application.__name__))
+        if self.application is not None and \
+           self.application is not Application:
+            raise ApplicationRedefined(other=entity, current=self.application)
 
         self.application = entity
 

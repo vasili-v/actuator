@@ -12,5 +12,6 @@ setup(
     long_description = "Actuator library allows to create python script with " \
                        "sophisticated argument processing",
     platforms = ["Darwin", "Linux"],
-    test_suite = "test"
+    test_suite = "test",
+    install_requires = ["sherbet"]
 )
