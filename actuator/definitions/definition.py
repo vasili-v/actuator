@@ -3,7 +3,7 @@ class _UnboundDefinition(object):
         self.cls = cls
         self.arguments = arguments
 
-    def bind(self, parent):
+    def __call__(self, parent):
         args, kwargs = self.arguments
         args += (parent,) + args
         return self.cls(*args, **kwargs)
@@ -14,7 +14,7 @@ def _extract(cls):
 
 def _bind(instance, definitions):
     for name, value in definitions:
-        setattr(instance, name, value.bind(instance))
+        setattr(instance, name, value(instance))
 
 class _DefinitionMethaclass(type):
     def __call__(*args, **kwargs):

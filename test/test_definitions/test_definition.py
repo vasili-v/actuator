@@ -9,11 +9,11 @@ class TestDefinition(unittest.TestCase):
         definition = Definition(1, 'a', x=1, y='a')
         self.assertIsInstance(definition, _UnboundDefinition)
 
-    def test_definition_bind(self):
+    def test_definition__call__(self):
         definition = Definition()
 
         application = Application()
-        definition = definition.bind(application)
+        definition = definition(application)
 
         self.assertIsInstance(definition, Definition)
         self.assertEqual(definition.parent, application)
