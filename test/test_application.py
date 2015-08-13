@@ -2,6 +2,7 @@ import unittest
 
 from actuator.exceptions import ApplicationRedefined
 from actuator.application import _registry, Application, main
+from actuator.definitions.definition import Definition, _UnboundDefinition
 
 class TestApplication(unittest.TestCase):
     def tearDown(self):
@@ -28,6 +29,62 @@ class TestApplication(unittest.TestCase):
 
         self.assertIn('TestApplication', str(ctx.exception))
         self.assertIn('SecondTestApplication', str(ctx.exception))
+
+    def test_application(self):
+        checkpoints = {'new': False, 'cls': None, 'x': None,
+                       'init': False, 'self': None}
+
+        class MyApplication(Application):
+            x = Definition()
+
+            def __new__(cls):
+                checkpoints['new'] = True
+                checkpoints['cls'] = cls
+                checkpoints['x'] = cls.x
+                return super(MyApplication, cls).__new__(cls)
+
+            def __init__(self):
+                checkpoints['init'] = True
+                checkpoints['self'] = self
+
+        application = MyApplication()
+
+        self.assertTrue(checkpoints['new'])
+        self.assertIs(checkpoints['cls'], MyApplication)
+        self.assertIsInstance(checkpoints['x'], _UnboundDefinition)
+
+        self.assertTrue(checkpoints['init'])
+        self.assertIs(checkpoints['self'], application)
+
+        self.assertIsInstance(application.x, Definition)
+
+    def test_application_new_failure(self):
+        checkpoints = {'new': False, 'cls': None, 'x': None,
+                       'init': False, 'self': None}
+
+        class MyApplication(Application):
+            x = Definition()
+
+            def __new__(cls):
+                checkpoints['new'] = True
+                checkpoints['cls'] = cls
+                checkpoints['x'] = cls.x
+                return None
+
+            def __init__(self):
+                checkpoints['init'] = True
+                checkpoints['self'] = self
+
+        application = MyApplication()
+
+        self.assertTrue(checkpoints['new'])
+        self.assertIs(checkpoints['cls'], MyApplication)
+        self.assertIsInstance(checkpoints['x'], _UnboundDefinition)
+
+        self.assertFalse(checkpoints['init'])
+        self.assertIs(checkpoints['self'], None)
+
+        self.assertIs(application, None)
 
     def test_main_default(self):
         self.assertEqual(main(), 0)
