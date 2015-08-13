@@ -5,7 +5,7 @@ class _UnboundDefinition(object):
 
     def __call__(self, parent):
         args, kwargs = self.arguments
-        args += (parent,) + args
+        args = (parent,) + args
         return self.cls(*args, **kwargs)
 
 def _extract(cls):

@@ -18,6 +18,23 @@ class TestDefinition(unittest.TestCase):
         self.assertIsInstance(definition, Definition)
         self.assertEqual(definition.parent, application)
 
+    def test_definition__call__subclassed(self):
+        class MyDefinition(Definition):
+            def __init__(self, x, y, z):
+                self.x = x
+                self.y = y
+                self.z = z
+
+        definition = MyDefinition(1, 2, 3)
+        application = Application()
+        definition = definition(application)
+
+        self.assertIsInstance(definition, Definition)
+        self.assertEqual(definition.parent, application)
+        self.assertEqual(definition.x, 1)
+        self.assertEqual(definition.y, 2)
+        self.assertEqual(definition.z, 3)
+
     def test_definition__extract(self):
         first_definition = Definition()
         second_definition = Definition()
