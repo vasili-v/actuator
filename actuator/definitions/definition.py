@@ -1,11 +1,14 @@
+import inspect
+import types
+
 class _UnboundDefinition(object):
     def __init__(self, cls, arguments):
         self.cls = cls
         self.arguments = arguments
 
-    def __call__(self, parent):
+    def __call__(self, parent, identifier):
         args, kwargs = self.arguments
-        args = (parent,) + args
+        args = (parent, identifier) + args
         return self.cls(*args, **kwargs)
 
 def _extract(cls):
@@ -13,8 +16,8 @@ def _extract(cls):
                   cls.__dict__.iteritems())
 
 def _bind(instance, definitions):
-    for name, value in definitions:
-        setattr(instance, name, value(instance))
+    for identifier, value in definitions:
+        setattr(instance, identifier, value(instance, identifier))
 
 class _DefinitionMethaclass(type):
     def __call__(*args, **kwargs):
@@ -22,18 +25,21 @@ class _DefinitionMethaclass(type):
 
         self = args[0]
         args = args[1:]
-        if len(args) > 0 and isinstance(args[0], Application):
-            parent = args[0]
-            args = args[1:]
-            definition = super(_DefinitionMethaclass, self). \
-                             __call__(*args, **kwargs)
-            definition.bind(parent)
-            return definition
+        if len(args) >= 2:
+            parent, identifier = args[:2]
+            if isinstance(parent, Application) and \
+               isinstance(identifier, types.StringTypes):
+                args = args[2:]
+                definition = super(_DefinitionMethaclass, self). \
+                                 __call__(*args, **kwargs)
+                definition.bind(parent, identifier)
+                return definition
 
         return _UnboundDefinition(self, (args, kwargs))
 
 class Definition(object):
     __metaclass__ = _DefinitionMethaclass
 
-    def bind(self, parent):
+    def bind(self, parent, identifier):
         self.parent = parent
+        self.identifier = identifier

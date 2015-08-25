@@ -13,10 +13,11 @@ class TestDefinition(unittest.TestCase):
         definition = Definition()
 
         application = Application()
-        definition = definition(application)
+        definition = definition(application, 'test')
 
         self.assertIsInstance(definition, Definition)
         self.assertEqual(definition.parent, application)
+        self.assertEqual(definition.identifier, 'test')
 
     def test_definition__call__subclassed(self):
         class MyDefinition(Definition):
@@ -27,10 +28,11 @@ class TestDefinition(unittest.TestCase):
 
         definition = MyDefinition(1, 2, 3)
         application = Application()
-        definition = definition(application)
+        definition = definition(application, 'test')
 
         self.assertIsInstance(definition, Definition)
         self.assertEqual(definition.parent, application)
+        self.assertEqual(definition.identifier, 'test')
         self.assertEqual(definition.x, 1)
         self.assertEqual(definition.y, 2)
         self.assertEqual(definition.z, 3)
@@ -64,14 +66,18 @@ class TestDefinition(unittest.TestCase):
         self.assertTrue(hasattr(test, 'first_definition'))
         self.assertIsInstance(test.first_definition, Definition)
         self.assertIs(test.first_definition.parent, test)
+        self.assertEqual(test.first_definition.identifier, 'first_definition')
 
         self.assertTrue(hasattr(test, 'second_definition'))
         self.assertIsInstance(test.second_definition, Definition)
         self.assertIs(test.second_definition.parent, test)
+        self.assertEqual(test.second_definition.identifier,
+                         'second_definition')
 
         self.assertTrue(hasattr(test, 'third_definition'))
         self.assertIsInstance(test.third_definition, Definition)
         self.assertIs(test.third_definition.parent, test)
+        self.assertEqual(test.third_definition.identifier, 'third_definition')
 
 test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestDefinition)
 
