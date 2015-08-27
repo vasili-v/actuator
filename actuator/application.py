@@ -1,3 +1,6 @@
+import sys
+
+from actuator.exceptions import Error
 from actuator._utils import _initialize_class
 from actuator._registry import _registry
 from actuator.definitions.definition import _extract, _bind
@@ -22,8 +25,18 @@ class _ApplicationMetaclass(type):
 class Application(object):
     __metaclass__ = _ApplicationMetaclass
 
+    def process_command_line(self, argv):
+        pass
+
     def run(self):
         return 0
 
 def main():
+    application = _registry.application()
+    try:
+        application.process_command_line(sys.argv)
+    except Error as error:
+        print >> sys.stderr, error
+        return 1
+
     return _registry.application().run()

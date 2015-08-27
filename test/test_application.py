@@ -1,12 +1,18 @@
 import unittest
+import sys
+import StringIO
 
-from actuator.exceptions import ApplicationRedefined
+from actuator.exceptions import Error, ApplicationRedefined
 from actuator.application import _registry, Application, main
 from actuator.definitions.definition import Definition, _UnboundDefinition
 
 class TestApplication(unittest.TestCase):
+    def setUp(self):
+        self.__stderr = sys.stderr
+
     def tearDown(self):
         _registry.application = Application
+        sys.stderr = self.__stderr
 
     def test_import(self):
         self.assertEqual(_registry.application, Application)
@@ -89,12 +95,35 @@ class TestApplication(unittest.TestCase):
     def test_main_default(self):
         self.assertEqual(main(), 0)
 
-    def test_main_custom(self):
+    def test_main_custom_run(self):
         class TestApplication(Application):
             def run(self):
                 return -1
 
         self.assertEqual(main(), -1)
+
+    def test_main_custom_command_line(self):
+        checkpoints = []
+
+        class TestApplication(Application):
+            def process_command_line(self, argv):
+                checkpoints.append(argv)
+
+        self.assertEqual(main(), 0)
+        self.assertEqual(len(checkpoints), 1)
+        self.assertIsInstance(checkpoints[0], list)
+
+    def test_main_custom_command_line_parsing_error(self):
+        class TestError(Error):
+            template = "Test Error"
+
+        class TestApplication(Application):
+            def process_command_line(self, argv):
+                raise TestError()
+
+        sys.stderr = StringIO.StringIO()
+        self.assertEqual(main(), 1)
+        self.assertEqual(sys.stderr.getvalue(), '%s\n' % TestError.template)
 
 test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestApplication)
 
