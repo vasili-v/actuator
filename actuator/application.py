@@ -1,4 +1,5 @@
 import sys
+import os
 
 from actuator.exceptions import Error
 from actuator._utils import _initialize_class
@@ -22,11 +23,33 @@ class _ApplicationMetaclass(type):
 
         return application
 
+class _CommandLineScript(object):
+    pass
+
+command_line_script = _CommandLineScript()
+
 class Application(object):
     __metaclass__ = _ApplicationMetaclass
 
-    def process_command_line(self, argv):
-        pass
+    actuator_executable = None
+    actuator_executable_directory = None
+    actuator_executable_name = None
+
+    def parse_executable_path(self, path):
+        if os.path.isfile(path):
+            self.actuator_executable = path
+            directory, name = os.path.split(path)
+            if directory and os.path.isdir(directory):
+                self.actuator_executable_directory = directory
+            if name:
+                self.actuator_executable_name = name
+
+        elif path == '-c':
+            self.actuator_executable = command_line_script
+
+    def parse_command_line(self, argv):
+        if argv:
+            self.parse_executable_path(argv[0])
 
     def run(self):
         return 0
@@ -34,9 +57,9 @@ class Application(object):
 def main():
     application = _registry.application()
     try:
-        application.process_command_line(sys.argv)
+        application.parse_command_line(sys.argv)
     except Error as error:
         print >> sys.stderr, error
         return 1
 
-    return _registry.application().run()
+    return application.run()
