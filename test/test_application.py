@@ -1,7 +1,6 @@
 import unittest
 import sys
 import StringIO
-import os
 
 from actuator.exceptions import Error, ApplicationRedefined
 from actuator.application import _registry, Application, main, command_line_script
@@ -10,13 +9,9 @@ from actuator.definitions.definition import Definition, _UnboundDefinition
 class TestApplication(unittest.TestCase):
     def setUp(self):
         self.__stderr = sys.stderr
-        self.__isfile = os.path.isfile
-        self.__isdir = os.path.isdir
 
     def tearDown(self):
         _registry.application = Application
-        os.path.isdir = self.__isdir
-        os.path.isfile = self.__isfile
         sys.stderr = self.__stderr
 
     def test_import(self):
@@ -96,59 +91,6 @@ class TestApplication(unittest.TestCase):
         self.assertIs(checkpoints['self'], None)
 
         self.assertIs(application, None)
-
-    def test_application_parse_executable_path_empty(self):
-        application = _registry.application()
-        application.parse_executable_path('')
-        self.assertIs(application.actuator_executable, None)
-        self.assertIs(application.actuator_executable_directory, None)
-        self.assertIs(application.actuator_executable_name, None)
-
-    def test_application_parse_executable_path_command_line_script(self):
-        def isfile(path):
-            return False
-
-        os.path.isfile = isfile
-
-        application = _registry.application()
-        application.parse_executable_path('-c')
-        self.assertIs(application.actuator_executable, command_line_script)
-        self.assertIs(application.actuator_executable_directory, None)
-        self.assertIs(application.actuator_executable_name, None)
-
-    def test_application_parse_executable_path(self):
-        def isfile(path):
-            return path == '/x/y'
-
-        os.path.isfile = isfile
-
-        def isdir(path):
-            return path == '/x'
-
-        os.path.isdir = isdir
-
-        application = _registry.application()
-        application.parse_executable_path('/x/y')
-        self.assertEqual(application.actuator_executable, '/x/y')
-        self.assertEqual(application.actuator_executable_directory, '/x')
-        self.assertEqual(application.actuator_executable_name, 'y')
-
-    def test_application_parse_executable_path_no_dir(self):
-        def isfile(path):
-            return path == '/x/y'
-
-        os.path.isfile = isfile
-
-        def isdir(path):
-            return False
-
-        os.path.isdir = isdir
-
-        application = _registry.application()
-        application.parse_executable_path('/x/y')
-        self.assertEqual(application.actuator_executable, '/x/y')
-        self.assertIs(application.actuator_executable_directory, None)
-        self.assertEqual(application.actuator_executable_name, 'y')
 
     def test_main_default(self):
         self.assertEqual(main(), 0)
