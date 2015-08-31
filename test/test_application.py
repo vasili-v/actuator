@@ -8,11 +8,13 @@ from actuator.definitions.definition import Definition, _UnboundDefinition
 
 class TestApplication(unittest.TestCase):
     def setUp(self):
+        self.__argv = sys.argv
         self.__stderr = sys.stderr
 
     def tearDown(self):
         _registry.application = Application
         sys.stderr = self.__stderr
+        sys.argv = self.__argv
 
     def test_import(self):
         self.assertEqual(_registry.application, Application)
@@ -93,25 +95,42 @@ class TestApplication(unittest.TestCase):
         self.assertIs(application, None)
 
     def test_main_default(self):
+        sys.argv = []
         self.assertEqual(main(), 0)
 
     def test_main_custom_application(self):
         stages = []
         instances = []
 
+        class TestDefinition(Definition):
+            def parse(self, value):
+                return value
+
         class TestApplication(Application):
+            first = TestDefinition()
+            second = TestDefinition()
+            third = TestDefinition()
+
             def __init__(self):
+                super(TestApplication, self).__init__()
+
                 stages.append('init')
                 instances.append(self)
 
             def parse_command_line(self, argv):
+                super(TestApplication, self).parse_command_line(argv)
+
                 stages.append('parse')
                 instances.append(self)
 
             def run(self):
                 stages.append('run')
                 instances.append(self)
-                return 0
+                return super(TestApplication, self).run()
+
+        sys.argv = ['', '--first=first-value',
+                        '--second=second-value',
+                        '--third=third-value']
 
         self.assertEqual(main(), 0)
         self.assertEqual(stages, ['init', 'parse', 'run'])
@@ -120,11 +139,16 @@ class TestApplication(unittest.TestCase):
         self.assertIsInstance(application, TestApplication)
         self.assertEqual(instances, len(stages)*[application])
 
+        self.assertEqual(application.first, 'first-value')
+        self.assertEqual(application.second, 'second-value')
+        self.assertEqual(application.third, 'third-value')
+
     def test_main_custom_run(self):
         class TestApplication(Application):
             def run(self):
                 return -1
 
+        sys.argv = []
         self.assertEqual(main(), -1)
 
     def test_main_custom_command_line(self):

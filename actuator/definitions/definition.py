@@ -8,6 +8,11 @@ class _Auto(object):
 
 auto = _Auto()
 
+class _Undefined(object):
+    pass
+
+Undefined = _Undefined()
+
 class _AutoArgument(object):
     def __init__(self, identifier, specifications, values):
         self.identifier = identifier
@@ -103,8 +108,10 @@ class _DefinitionMethaclass(type):
 class Definition(object):
     __metaclass__ = _DefinitionMethaclass
 
-    def __init__(self, name=auto):
+    def __init__(self, name=auto, default=Undefined, nullable=False):
         self.name = name
+        self.default = default
+        self.nullable = nullable
 
     def bind(self, parent, identifier):
         self.parent = parent

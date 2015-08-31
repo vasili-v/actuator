@@ -4,7 +4,7 @@ from actuator.exceptions import InvalidDefinitionArguments
 from actuator.application import Application
 from actuator.definitions.definition import Definition, _UnboundDefinition, \
                                             _extract, _bind, _AutoArgument, \
-                                            auto
+                                            auto, Undefined
 
 class TestDefinition(unittest.TestCase):
     def test_definition(self):
@@ -45,11 +45,15 @@ class TestDefinition(unittest.TestCase):
 
     def test_definition__call__(self):
         definition = Definition()
+        definition.name.value = 'test'
 
         application = Application()
         definition = definition(application, 'test')
 
         self.assertIsInstance(definition, Definition)
+        self.assertEqual(definition.name, 'test')
+        self.assertEqual(definition.default, Undefined)
+        self.assertFalse(definition.nullable)
         self.assertEqual(definition.parent, application)
         self.assertEqual(definition.identifier, 'test')
 

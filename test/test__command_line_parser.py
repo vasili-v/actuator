@@ -1,7 +1,10 @@
 import unittest
 import os
 
+from actuator.exceptions import UnrecognizedApplicationArgument
+from actuator.definitions.definition import Definition
 from actuator._command_line_parser import _CommandLineParser, command_line_script
+from actuator.application import Application
 
 class TestCommandLineParser(unittest.TestCase):
     def setUp(self):
@@ -24,7 +27,7 @@ class TestCommandLineParser(unittest.TestCase):
         os.path.isdir = isdir
 
         parser = _CommandLineParser()
-        parser.parse_command_line(['/x/y', '-v', '-b'])
+        parser.parse_command_line(['/x/y'])
         self.assertEqual(parser.actuator_executable, '/x/y')
         self.assertEqual(parser.actuator_executable_directory, '/x')
         self.assertEqual(parser.actuator_executable_name, 'y')
@@ -88,6 +91,68 @@ class TestCommandLineParser(unittest.TestCase):
         self.assertEqual(parser.actuator_executable, '/x/y')
         self.assertIs(parser.actuator_executable_directory, None)
         self.assertEqual(parser.actuator_executable_name, 'y')
+
+    def test_command_line_parser_parse_named_argument(self):
+        class Test(object):
+             identifier = 'test'
+
+             def parse(self, value):
+                 return value
+
+        names = {'test': Test()}
+
+        parser = _CommandLineParser()
+        parser.parse_named_argument('test=value', names)
+        self.assertEqual(parser.test, 'value')
+
+    def test_command_line_parser_parse_named_argument_no_value(self):
+        class Test(object):
+             identifier = 'test'
+
+             def parse(self, value):
+                 return value
+
+        names = {'test': Test()}
+
+        parser = _CommandLineParser()
+        parser.parse_named_argument('test', names)
+        self.assertIs(parser.test, None)
+
+    def test_command_line_parser_parse_named_argument_no_value(self):
+        parser = _CommandLineParser()
+        with self.assertRaises(UnrecognizedApplicationArgument) as ctx:
+            parser.parse_named_argument('unknown', {})
+
+        self.assertIn('unknown', str(ctx.exception))
+        self.assertIn('_CommandLineParser', str(ctx.exception))
+
+    def test_command_line_parser_parse_command_line_arguments(self):
+        class TestDefinition(Definition):
+            def parse(self, value):
+                return value
+
+        parser = Application()
+        parser.first = TestDefinition('first')(parser, 'first')
+        parser.second = TestDefinition('second')(parser, 'second')
+        parser.third = TestDefinition('third')(parser, 'third')
+
+        parser.parse_command_line_arguments(('--first=first_value',
+                                             '--second=second_value',
+                                             '--third=third_value'))
+
+        self.assertEqual(parser.first, 'first_value')
+        self.assertEqual(parser.second, 'second_value')
+        self.assertEqual(parser.third, 'third_value')
+
+    def test_command_line_parser_parse_command_line_arguments_unknown_argument(self):
+        parser = _CommandLineParser()
+
+        with self.assertRaises(UnrecognizedApplicationArgument) as ctx:
+            parser.parse_command_line_arguments(('unknown',))
+
+        print str(ctx.exception)
+        self.assertIn('unknown', str(ctx.exception))
+        self.assertIn('_CommandLineParser', str(ctx.exception))
 
 test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestCommandLineParser)
 
