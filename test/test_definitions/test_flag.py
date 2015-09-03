@@ -7,6 +7,9 @@ from actuator.definitions.flag import Flag
 
 class TestFlag(unittest.TestCase):
     def __make_flag(self, **kwargs):
+        if 'name' not in kwargs:
+            kwargs['name'] = 'test'
+
         return Flag(**kwargs)(Application(), 'test')
 
     def test_flag(self):

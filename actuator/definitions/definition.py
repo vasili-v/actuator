@@ -1,7 +1,10 @@
 import inspect
 import types
 
-from actuator.exceptions import InvalidDefinitionArguments
+from actuator.exceptions import InvalidDefinitionName, \
+                                InvalidSubstringInDefinitionName, \
+                                DefinitionNamesAmbiguity, \
+                                InvalidDefinitionArguments
 
 class _Auto(object):
     pass
@@ -80,12 +83,28 @@ def _extract(cls):
 def _make_name(indentifier):
     return indentifier.replace('_', '-')
 
+def _validate_names(definition, names, instance):
+    name = definition.name
+    if name not in names:
+        names[name] = []
+    names[name].append(definition)
+
+    if len(names[name]) > 1:
+        identifiers = [definition.identifier for definition in names[name]]
+        raise DefinitionNamesAmbiguity(identifiers=identifiers,
+                                       parent=type(instance),
+                                       name=name)
+
 def _bind(instance, definitions):
+    names = {}
     for indentifier, value in definitions:
         if value.error is None and value.name.found and value.name.required:
             value.name.value = _make_name(indentifier)
 
-        setattr(instance, indentifier, value(instance, indentifier))
+        definition = value(instance, indentifier)
+        _validate_names(definition, names, instance)
+
+        setattr(instance, indentifier, definition)
 
 class _DefinitionMethaclass(type):
     def __call__(*args, **kwargs):
@@ -101,6 +120,7 @@ class _DefinitionMethaclass(type):
                 definition = super(_DefinitionMethaclass, self). \
                                  __call__(*args, **kwargs)
                 definition.bind(parent, identifier)
+                definition.validate()
                 return definition
 
         return _UnboundDefinition(self, (args, kwargs))
@@ -112,6 +132,20 @@ class Definition(object):
         self.name = name
         self.default = default
         self.nullable = nullable
+
+    def validate(self):
+        if not isinstance(self.name, types.StringTypes):
+            raise InvalidDefinitionName(name=repr(self.name),
+                                        identifier=self.identifier,
+                                        parent=type(self.parent))
+
+        from actuator._command_line_parser import _CommandLineParser
+        separator = _CommandLineParser.actuator_argument_value_separator
+        if separator in self.name:
+            raise InvalidSubstringInDefinitionName(name=self.name,
+                                                   identifier=self.identifier,
+                                                   parent=type(self.parent),
+                                                   separator=separator)
 
     def bind(self, parent, identifier):
         self.parent = parent

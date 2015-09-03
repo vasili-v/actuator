@@ -8,6 +8,19 @@ class ApplicationRedefined(Error):
     template = 'Class {other.__name__} can\'t be defined as application ' \
                'because {current.__name__} has already been defined.'
 
+class InvalidDefinitionName(Error):
+    template = 'Expected string as definition name but got {name} ' \
+               'for definition {identifier} of {parent.__name__}.'
+
+class InvalidSubstringInDefinitionName(Error):
+    template = 'Name "{name}" of {parent.__name__} definition {identifier} ' \
+               'shouldn\'t contain separator "{separator}".'
+
+class DefinitionNamesAmbiguity(Error):
+    template = 'Definition{identifiers_plural} {identifiers} of ' \
+               '{parent.__name__} ha{identifiers_plural<ve|s>} the same name ' \
+               '"{name}".'
+
 class InvalidDefinitionArguments(Error):
     template = 'Definition {identifier} of {parent.__name__} raised error ' \
                '"{error}" on getting its arguments values.'

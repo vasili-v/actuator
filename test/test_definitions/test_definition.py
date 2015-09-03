@@ -1,10 +1,14 @@
 import unittest
 
-from actuator.exceptions import InvalidDefinitionArguments
+from actuator.exceptions import InvalidDefinitionArguments, \
+                                InvalidDefinitionName, \
+                                InvalidSubstringInDefinitionName, \
+                                DefinitionNamesAmbiguity
+from actuator._command_line_parser import _CommandLineParser
 from actuator.application import Application
 from actuator.definitions.definition import Definition, _UnboundDefinition, \
                                             _extract, _bind, _AutoArgument, \
-                                            auto, Undefined
+                                            auto, Undefined, _validate_names
 
 class TestDefinition(unittest.TestCase):
     def test_definition(self):
@@ -60,6 +64,8 @@ class TestDefinition(unittest.TestCase):
     def test_definition__call__subclassed(self):
         class MyDefinition(Definition):
             def __init__(self, x, y, z):
+                super(MyDefinition, self).__init__('test')
+
                 self.x = x
                 self.y = y
                 self.z = z
@@ -203,6 +209,51 @@ class TestDefinition(unittest.TestCase):
         self.assertEqual(test.third_definition.name, 'custom')
         self.assertIs(test.third_definition.parent, test)
         self.assertEqual(test.third_definition.identifier, 'third_definition')
+
+    def test_definition__validate_names(self):
+        names = {}
+        application = Application()
+
+        first_definition = Definition('duplicate')
+        second_definition = Definition('duplicate')
+
+        first_definition = first_definition(application, 'first_definition')
+        _validate_names(first_definition, names, application)
+        self.assertEqual(names, {'duplicate': [first_definition]})
+
+        second_definition = second_definition(application, 'second_definition')
+        with self.assertRaises(DefinitionNamesAmbiguity) as ctx:
+            _validate_names(second_definition, names, application)
+
+        self.assertEqual(names, {'duplicate': [first_definition,
+                                              second_definition]})
+
+        self.assertIn('first_definition', str(ctx.exception))
+        self.assertIn('second_definition', str(ctx.exception))
+        self.assertIn('Application', str(ctx.exception))
+        self.assertIn('duplicate', str(ctx.exception))
+
+    def test_definition_validate_invalid_name_type(self):
+        definition = Definition(False)
+        with self.assertRaises(InvalidDefinitionName) as ctx:
+            definition(Application(), 'test')
+
+        self.assertIn('False', str(ctx.exception))
+        self.assertIn('Application', str(ctx.exception))
+        self.assertIn('test', str(ctx.exception))
+
+    def test_definition_validate_separator(self):
+        separator = _CommandLineParser.actuator_argument_value_separator
+        name = 'a%sb' % separator
+        definition = Definition(name)
+        with self.assertRaises(InvalidSubstringInDefinitionName) as ctx:
+            definition(Application(), 'test')
+
+        message = str(ctx.exception)
+        self.assertIn(name, message)
+        self.assertIn('Application', message)
+        self.assertIn('test', message)
+        self.assertIn(separator, message.replace(name, ''))
 
 test_suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestDefinition)
 
